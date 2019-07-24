@@ -1,8 +1,13 @@
 import requests
 from time import sleep
+from dateutil.parser import parse
+from lxml import html
 
 
 class Scrape(object):
+    def __init__(self):
+        self.all_categories = []
+
     @staticmethod
     def get_url(deal_name):
         product_urls = {
@@ -60,8 +65,10 @@ class Scrape(object):
                 "image_url": data['image_url'],
                 "price": data['offer_price'],
                 "link": "https://paytmmall.com/" + data['url'].split("/")[5].split("?")[0] + "-pdp",
+                "new_url": data['newurl'],
                 "discount": data['discount'],
-                "offers": []
+                "offers": [],
+                "categories": []
             }
             products.append(product)
         return products
@@ -72,16 +79,22 @@ class Scrape(object):
         return offer_base_url % product_id
 
     @staticmethod
-    def get_offers_data(url):
+    def get_sub_data(url, key, label):
         r = requests.get(url)
         if r.ok:
             data = r.json()
-            if 'codes' in data:
-                return data['codes']
-            print("Issue in retrieving the offers for the given product.")
+            if key in data:
+                return data[key]
+            print(f"Issue in retrieving the {label} ({key}) for the given product.")
             return False
-        print("Issue in retrieving the offers for the given product.")
+        print(f"Issue in retrieving the {label} ({key}) for the given product.")
         return False
+
+    def get_offers_data(self, url):
+        return self.get_sub_data(url, key="codes", label="offers")
+
+    def get_categories_data(self, url):
+        return self.get_sub_data(url, key="ancestors", label="categories")
 
     @staticmethod
     def clean_offers_data(data):
@@ -92,6 +105,7 @@ class Scrape(object):
             offer = {
                 "code": given_offer['code'],
                 "description": given_offer['offerText'],
+                "valid_upto": parse(given_offer['valid_upto']).strftime("%Y-%m-%d %H:%M:%S"),
                 "cashback": "".join([c for c in given_offer['code'] if 47 < ord(c) < 58])
             }
             if not offer['cashback']:
@@ -102,20 +116,59 @@ class Scrape(object):
         return offers
 
     @staticmethod
-    def append_offers_to_product(product, offers):
-        product['offers'] = offers
+    def clean_categories_data(data):
+        categories = []
+        index = 0
+        if not data:
+            return []
+        for given_category in data:
+            category = {
+                "id": given_category['id'],
+                "name": given_category['name'],
+                "seo_url": given_category['seourl'],
+                "new_url": given_category['newurl'],
+                "priority": index
+            }
+            index += 1
+            categories.append(category)
+        return categories
 
-    def get_products_with_offers(self, url, query_string):
+    @staticmethod
+    def append_sub_data_to_product(product, offers, categories):
+        product['offers'] = offers
+        product['categories'] = categories
+
+    def scrape(self, url, query_string):
         data = self.request_data(url, query_string)
         if data:
+            print("Processing incoming data")
             products = self.clean_data(data)
             for product in products:
+                print("Product with name %s about to process" % product['name'])
                 sleep(2)
                 offers_data = self.get_offers_data(self.get_offer_url(product['id']))
+                categories_data = self.get_categories_data(product['new_url'])[:-1]
                 if not offers_data:
                     continue
+                if not categories_data:
+                    continue
                 offers = self.clean_offers_data(offers_data)
-                self.append_offers_to_product(product, offers)
+                categories = self.clean_categories_data(categories_data)
+                print("Product with name %s processed" % product['name'])
+                self.append_sub_data_to_product(product, offers, categories)
             return products
         return False
 
+    def get_all_categories(self):
+        url = "https://paytmmall.com/"
+        xpath = '//*[@id="app"]/div/div[5]/div[5]/div[2]'
+        r = requests.get(url)
+        html_exp = self.find_by_xpath(r.text, xpath)
+        elements = [element for element in html_exp[0].iterlinks()]
+        self.all_categories = [{"name": element[0].text, "url": element[2]} for element in elements]
+        return self
+
+    @staticmethod
+    def find_by_xpath(element_source, xpath_expression):
+        root = html.fromstring(element_source)
+        return root.xpath(xpath_expression)
