@@ -1,8 +1,7 @@
 import MySQLdb
 import MySQLdb.cursors
 from datetime import datetime
-from configurer import config
-
+from core.configurer import config
 
 class DB_Manager(object):
     PRODUCTS_TABLE_KEY = "products_table_name"
@@ -77,7 +76,7 @@ class DB_Manager(object):
         else:
             columns = ', '.join(column_keys[1:])
             values = ", ".join(["%s" for i in range(len(data[0]))])
-        sql = "IGNORE INSERT INTO " + table_name + " (" + columns + ") VALUES (" + values + ")"
+        sql = "INSERT IGNORE INTO " + table_name + " (" + columns + ") VALUES (" + values + ")"
         print(sql)
         try:
             self.cursor.executemany(sql, data)
@@ -94,7 +93,7 @@ class DB_Manager(object):
         else:
             columns = ', '.join(column_keys[1:])
             values = ", ".join(["%s" for i in range(len(data[0]))])
-        sql = "INSERT INTO " + table_name + " (" + columns + ") VALUES (" + values + ")"
+        sql = "INSERT IGNORE INTO " + table_name + " (" + columns + ") VALUES (" + values + ")"
         print(sql)
         for query in data:
             try:
@@ -110,7 +109,7 @@ class DB_Manager(object):
         existing_offers = self.get_all_existing_offers(self.OFFERS_TABLE_KEY)
         for product in products:
             for offer in product['offers']:
-                # TODO: sort out offer unique_id problem somehow
+                # TODO: sort out offer unique_id
                 offer_id = next(
                     existing_offer['id'] for existing_offer in existing_offers
                     if existing_offer['code'] == offer['code']
@@ -159,7 +158,7 @@ class DB_Manager(object):
                 offer['code'],
                 offer['description'],
                 offer['valid_upto'],
-                offer['cashback']
+                int(offer['cashback'])
             )
             offers_list.append(offer_item)
         return offers_list

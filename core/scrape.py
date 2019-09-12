@@ -9,16 +9,6 @@ class Scrape(object):
         self.all_categories = []
 
     @staticmethod
-    def get_url(deal_name):
-        product_urls = {
-            "sunday": "https://catalog.paytm.com/sunday-bazaar-deals-llpid-78432",
-            "super_value": "https://catalog.paytm.com/super-value-deals-02-llpid-141765",
-            "super_market": "https://catalog.paytm.com/supermarket-shopnsave-llpid-115994",
-            "world_store": "https://catalog.paytm.com/world-store-super-sale-llpid-115062",
-        }
-        return product_urls[deal_name]
-
-    @staticmethod
     def get_query_string(page_number=1, sort_type="new"):
         sort_types = {
             "new": {
@@ -110,8 +100,6 @@ class Scrape(object):
             }
             if not offer['cashback']:
                 offer['cashback'] = "0"
-            if offer['code'] == "SHOP50" or offer['code'] == "MALL100":
-                continue
             offers.append(offer)
         return offers
 
@@ -138,14 +126,14 @@ class Scrape(object):
         product['offers'] = offers
         product['categories'] = categories
 
-    def scrape(self, url, query_string):
+    def scrape(self, url, query_string, rate_limit_time_interval=2):
         data = self.request_data(url, query_string)
         if data:
             print("Processing incoming data")
             products = self.clean_data(data)
             for product in products:
                 print("Product with name %s about to process" % product['name'])
-                sleep(2)
+                sleep(rate_limit_time_interval)
                 offers_data = self.get_offers_data(self.get_offer_url(product['id']))
                 categories_data = self.get_categories_data(product['new_url'])[:-1]
                 if not offers_data:
@@ -160,15 +148,32 @@ class Scrape(object):
         return False
 
     def get_all_categories(self):
+        if len(self.all_categories) > 0:
+            return self.all_categories
         url = "https://paytmmall.com/"
         xpath = '//*[@id="app"]/div/div[5]/div[5]/div[2]'
         r = requests.get(url)
         html_exp = self.find_by_xpath(r.text, xpath)
         elements = [element for element in html_exp[0].iterlinks()]
-        self.all_categories = [{"name": element[0].text, "url": element[2]} for element in elements]
-        return self
+        self.all_categories = [
+            {
+                "name": element[0].text,
+                "url": "https://catalog.paytm.com" + element[2]
+            } for element in elements
+        ]
+        return self.all_categories
 
     @staticmethod
     def find_by_xpath(element_source, xpath_expression):
         root = html.fromstring(element_source)
         return root.xpath(xpath_expression)
+
+    @staticmethod
+    def get_predefined_url(deal_name):
+        product_urls = {
+            "sunday": "https://catalog.paytm.com/sunday-bazaar-deals-llpid-78432",
+            "super_value": "https://catalog.paytm.com/super-value-deals-02-llpid-141765",
+            "super_market": "https://catalog.paytm.com/supermarket-shopnsave-llpid-115994",
+            "world_store": "https://catalog.paytm.com/world-store-super-sale-llpid-115062",
+        }
+        return product_urls[deal_name]

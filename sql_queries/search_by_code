@@ -1,1 +1,0 @@
-select products.name, products.link, products.price from products inner join offers on products.product_uuid = offers.product_uuid where offers.code = "STEALDEALS" order by products.price desc;

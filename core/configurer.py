@@ -12,7 +12,13 @@ class Configurer:
     @staticmethod
     def get_abs_filename(filename):
         return os.path.abspath(os.path.join(os.path.dirname(__file__),
+                                            os.path.pardir,
                                             filename))
+
+    @staticmethod
+    def get_abs_parent_directory():
+        return os.path.abspath(os.path.join(os.path.dirname(__file__),
+                                            os.path.pardir))
 
     def get_configuration(self, key, section="DATABASE"):
         try:
