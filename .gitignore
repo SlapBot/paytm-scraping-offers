@@ -155,3 +155,4 @@ fabric.properties
 
 # virtualenv folder
 paytm-env
+paytm-scraping-offers-env

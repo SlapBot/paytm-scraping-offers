@@ -3,7 +3,6 @@ chardet==3.0.4
 idna==2.8
 lxml==4.4.1
 mysqlclient==1.4.4
-pkg-resources==0.0.0
 python-dateutil==2.8.0
 requests==2.22.0
 six==1.12.0

@@ -1,3 +1,25 @@
+"""
+This snippet only written so
+that example scripts can be run standalone within their sub-directory: python examples/crawl_and_scrape_category.py
+Don't do it this way when importing from outside the repository as you should.
+Simply remove the passage from start to end tags
+
+Start Snippet
+"""
+import sys
+import os
+
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+"""
+This snippet only written so 
+that example scripts can be run standalone within their sub-directory: python examples/crawl_and_scrape_category.py
+Don't do it this way when importing from outside the repository as you should.
+Simply remove the passage from start to end tags
+
+End Snippet
+"""
+
 from core.db_manager import DB_Manager
 from core.scrape import Scrape
 from time import sleep
